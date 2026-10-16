@@ -306,17 +306,67 @@
     .journey-stats.is-loading dd {
       color: #94a3b8;
     }
-    .style-picker {
+    .map-controls-bottom {
       position: absolute;
       bottom: 12px;
       right: 12px;
-      left: auto;
       z-index: 1000;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0.45rem;
+      max-width: calc(100% - 24px);
+    }
+    .map-legend {
+      padding: 0.6rem 0.65rem 0.65rem;
+      min-width: 7.75rem;
+    }
+    .map-legend-toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .pin-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0;
+      font-size: 0.6875rem;
+      line-height: 1.25;
+      color: var(--color-text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .pin-toggle input {
+      flex-shrink: 0;
+      width: 0.9rem;
+      height: 0.9rem;
+      margin: 0;
+      accent-color: var(--color-accent);
+      cursor: pointer;
+    }
+    .pin-toggle-swatch {
+      flex-shrink: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 1.5px solid #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    }
+    .pin-toggle-swatch--site {
+      background: #2b82cb;
+    }
+    .pin-toggle-swatch--trip {
+      background: linear-gradient(135deg, #22c55e 50%, #3b82f6 50%);
+    }
+    .style-picker {
       width: 11.75rem;
       margin: 0;
       padding: 0.6rem 0.65rem 0.65rem;
       min-inline-size: 0;
       overflow: hidden;
+      flex-shrink: 0;
     }
     .style-picker-title {
       margin: 0 0 0.45rem;
@@ -490,10 +540,20 @@
       .journey-stats dd {
         font-size: 0.75rem;
       }
-      .style-picker {
+      .map-controls-bottom {
         right: 8px;
         bottom: 8px;
-        width: min(11.75rem, calc(100% - 16px));
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.4rem;
+      }
+      .map-legend {
+        width: min(11.75rem, 100%);
+        min-width: 0;
+        padding: 0.45rem 0.5rem 0.5rem;
+      }
+      .style-picker {
+        width: min(11.75rem, 100%);
         padding: 0.45rem 0.5rem 0.5rem;
       }
       .style-picker button {
@@ -745,18 +805,35 @@
         <dd id="stats-distance">—</dd>
       </dl>
     </aside>
-    <div class="style-picker map-panel" role="group" aria-labelledby="basemap-label">
-      <p class="style-picker-title" id="basemap-label">Basemap</p>
-      <div class="style-picker__grid">
-        <button type="button" id="style-ortho" aria-pressed="true">
-          Satellite
-        </button>
-        <button type="button" id="style-original" aria-pressed="false">
-          Street
-        </button>
-        <button type="button" id="style-osm" aria-pressed="false">
-          OSM
-        </button>
+    <div class="map-controls-bottom">
+      <div class="map-legend map-panel" role="group" aria-labelledby="map-legend-label">
+        <p class="style-picker-title" id="map-legend-label">Pins</p>
+        <div class="map-legend-toggles">
+          <label class="pin-toggle">
+            <input type="checkbox" id="toggle-site-pins" checked />
+            <span class="pin-toggle-swatch pin-toggle-swatch--site" aria-hidden="true"></span>
+            Site pins (4)
+          </label>
+          <label class="pin-toggle">
+            <input type="checkbox" id="toggle-trip-pins" checked />
+            <span class="pin-toggle-swatch pin-toggle-swatch--trip" aria-hidden="true"></span>
+            Trip pins
+          </label>
+        </div>
+      </div>
+      <div class="style-picker map-panel" role="group" aria-labelledby="basemap-label">
+        <p class="style-picker-title" id="basemap-label">Basemap</p>
+        <div class="style-picker__grid">
+          <button type="button" id="style-ortho" aria-pressed="true">
+            Satellite
+          </button>
+          <button type="button" id="style-original" aria-pressed="false">
+            Street
+          </button>
+          <button type="button" id="style-osm" aria-pressed="false">
+            OSM
+          </button>
+        </div>
       </div>
     </div>
     </div>
@@ -1071,12 +1148,14 @@
     styleOsmBtn.addEventListener("click", () => setMapStyle("osm"));
 
     const bounds = L.latLngBounds();
+    const siteMarkers = [];
 
     locations.forEach((loc) => {
       const marker = L.marker([loc.lat, loc.lng]).addTo(map);
       marker.bindPopup(
         `<strong>${loc.name}</strong><code>${loc.lat}, ${loc.lng}</code>`
       );
+      siteMarkers.push(marker);
       bounds.extend([loc.lat, loc.lng]);
     });
 
@@ -1263,13 +1342,54 @@
     map.fitBounds(bounds, { padding: [48, 48] });
     requestAnimationFrame(() => map.invalidateSize());
 
-    function highlightTripPinsForCard(card) {
+    function clearTripPinHighlight() {
       tripPinRegistry.forEach((entry) => {
+        if (!entry.marker) return;
+        entry.marker.setIcon(createTripPinIcon(entry.stop.color, false));
+        entry.marker.setZIndexOffset(500);
+      });
+    }
+
+    function highlightTripPinsForCard(card) {
+      if (!card) {
+        clearTripPinHighlight();
+        return;
+      }
+      tripPinRegistry.forEach((entry) => {
+        if (!entry.marker) return;
         const highlighted = entry.memberships.some(
           (m) => document.getElementById(m.trip.cardId) === card
         );
         entry.marker.setIcon(createTripPinIcon(entry.stop.color, highlighted));
         entry.marker.setZIndexOffset(highlighted ? 800 : 500);
+      });
+    }
+
+    function clearTripRoute() {
+      if (tripRouteLayer) {
+        map.removeLayer(tripRouteLayer);
+        tripRouteLayer = null;
+      }
+      if (activeTripCard) {
+        activeTripCard.classList.remove("is-active");
+        activeTripCard = null;
+      }
+      clearTripPinHighlight();
+      updatePinDraggability();
+    }
+
+    function setSitePinsVisible(visible) {
+      siteMarkers.forEach((marker) => {
+        if (visible) marker.addTo(map);
+        else map.removeLayer(marker);
+      });
+    }
+
+    function setTripPinsVisible(visible) {
+      tripPinRegistry.forEach((entry) => {
+        if (!entry.marker) return;
+        if (visible) entry.marker.addTo(map);
+        else map.removeLayer(entry.marker);
       });
     }
 
@@ -1376,6 +1496,10 @@
     function bindTripCard(trip) {
       const card = document.getElementById(trip.cardId);
       const selectTrip = () => {
+        if (activeTripCard === card && tripRouteLayer) {
+          clearTripRoute();
+          return;
+        }
         document.querySelectorAll(".trip-card.is-active").forEach((el) => {
           el.classList.remove("is-active");
         });
@@ -1398,6 +1522,13 @@
     }
 
     trips.forEach(bindTripCard);
+
+    document.getElementById("toggle-site-pins").addEventListener("change", (e) => {
+      setSitePinsVisible(e.target.checked);
+    });
+    document.getElementById("toggle-trip-pins").addEventListener("change", (e) => {
+      setTripPinsVisible(e.target.checked);
+    });
 
     updateJourneyStats();
 
