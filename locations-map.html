@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Singapore Locations Map</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    crossorigin="anonymous"
+  />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #1a1a1a;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    header h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    header p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+    .map-shell {
+      display: flex;
+      height: calc(100vh - 72px);
+      min-height: 0;
+    }
+    .trip-planner {
+      flex: 0 0 220px;
+      padding: 0.65rem 0.7rem;
+      overflow-y: auto;
+      background: #f1f5f9;
+      border-right: 1px solid #e2e8f0;
+    }
+    .trip-planner-label {
+      margin: 0 0 0.5rem 0.15rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .trip-planner-hint {
+      margin: 0 0 0.5rem 0.15rem;
+      font-size: 0.65rem;
+      line-height: 1.35;
+      color: #94a3b8;
+    }
+    .trip-card {
+      padding: 0.55rem 0.6rem;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .trip-card:hover {
+      border-color: #cbd5e1;
+    }
+    .trip-card.is-active {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px #dbeafe;
+    }
+    .trip-card.is-loading {
+      opacity: 0.65;
+      pointer-events: none;
+    }
+    .trip-card + .trip-card {
+      margin-top: 0.45rem;
+    }
+    .trip-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      margin-bottom: 0.45rem;
+    }
+    .trip-id {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .trip-duration {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #0369a1;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 0.12rem 0.4rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .trip-route {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding-left: 0.1rem;
+    }
+    .trip-leg {
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 0.4rem;
+      align-items: start;
+      min-width: 0;
+    }
+    .trip-leg + .trip-leg .trip-marker::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 100%;
+      width: 2px;
+      height: 0.45rem;
+      transform: translateX(-50%);
+      background: #cbd5e1;
+      border-radius: 1px;
+    }
+    .trip-marker {
+      position: relative;
+      width: 8px;
+      height: 8px;
+      margin-top: 0.22rem;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 2px #dcfce7;
+    }
+    .trip-leg:last-child .trip-marker {
+      background: #3b82f6;
+      box-shadow: 0 0 0 2px #dbeafe;
+    }
+    .trip-place {
+      font-size: 0.7rem;
+      line-height: 1.35;
+      color: #334155;
+    }
+    .map-area {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    .journey-stats {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      min-width: 9.5rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
+      border: 1px solid #e2e8f0;
+    }
+    .journey-stats-label {
+      margin: 0 0 0.4rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .journey-stats dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.2rem 0.65rem;
+      align-items: baseline;
+    }
+    .journey-stats dt {
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+    .journey-stats dd {
+      margin: 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #0f172a;
+      text-align: right;
+    }
+    .journey-stats.is-loading dd {
+      color: #94a3b8;
+    }
+    .style-picker {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      z-index: 1000;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.5rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
+      border: 1px solid #e2e8f0;
+    }
+    .style-picker legend {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 0 0.15rem;
+      margin-bottom: 0.15rem;
+    }
+    .style-picker button {
+      appearance: none;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #0f172a;
+      font: inherit;
+      font-size: 0.8125rem;
+      padding: 0.45rem 0.65rem;
+      cursor: pointer;
+      text-align: left;
+      min-width: 7.5rem;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .style-picker button:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .style-picker button[aria-pressed="true"] {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #f8fafc;
+    }
+    .leaflet-popup-content {
+      margin: 0.75rem 1rem;
+      line-height: 1.4;
+    }
+    .leaflet-popup-content strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .leaflet-popup-content code {
+      font-size: 0.8rem;
+      color: #475569;
+    }
+    .trip-pin {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.28);
+      background: var(--trip-pin-color, #3b82f6);
+    }
+    .trip-pin--highlight {
+      width: 18px;
+      height: 18px;
+      box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.35),
+        0 2px 10px rgba(15, 23, 42, 0.35);
+    }
+    .leaflet-marker-icon.leaflet-marker-draggable .trip-pin {
+      cursor: grab;
+    }
+    .leaflet-marker-icon.leaflet-marker-draggable.leaflet-marker-dragging .trip-pin {
+      cursor: grabbing;
+    }
+    .trip-chooser {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .trip-chooser button {
+      font: inherit;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+    }
+    .trip-chooser button:hover {
+      background: #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Location pins</h1>
+    <p>Four sites in Singapore — click a pin for details</p>
+  </header>
+  <div class="map-shell">
+    <aside class="trip-planner" aria-label="Trip planner">
+      <p class="trip-planner-label">Trips</p>
+      <p class="trip-planner-hint">Select a trip, then drag its pins to update the route.</p>
+      <article
+        class="trip-card"
+        id="trip-1"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 1, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 1</span>
+          <span class="trip-duration">20 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Grab HQ @ One-North</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Jurong Hill Prawn Fishing &amp; Beer Garden</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-2"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 2, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 2</span>
+          <span class="trip-duration">6 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Jurong Hill Prawn Fishing &amp; Beer Garden</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Eco-tech @ Sunview</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-3"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 3, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 3</span>
+          <span class="trip-duration">40 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Eco-tech @ Sunview</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Royal Thai Embassy</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-4"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 4, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 4</span>
+          <span class="trip-duration">2 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Royal Thai Embassy</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Delfi Orchard</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-5"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 5, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 5</span>
+          <span class="trip-duration">23 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Delfi Orchard</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">The Falcon @ NSRCC</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-6"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 6, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 6</span>
+          <span class="trip-duration">9 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">The Falcon @ NSRCC</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">ITE Simei</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-7"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 7, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 7</span>
+          <span class="trip-duration">19 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">ITE Simei</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Genting Centre</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-8"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 8, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 8</span>
+          <span class="trip-duration">5 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Genting Centre</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Springleaf Tower</span>
+          </div>
+        </div>
+      </article>
+      <article
+        class="trip-card"
+        id="trip-9"
+        role="button"
+        tabindex="0"
+        aria-label="Trip 9, show route on map"
+      >
+        <div class="trip-card-head">
+          <span class="trip-id">Trip 9</span>
+          <span class="trip-duration">12 min</span>
+        </div>
+        <div class="trip-route">
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Springleaf Tower</span>
+          </div>
+          <div class="trip-leg">
+            <span class="trip-marker" aria-hidden="true"></span>
+            <span class="trip-place">Grab HQ @ One-North</span>
+          </div>
+        </div>
+      </article>
+    </aside>
+    <div class="map-area">
+    <div id="map" role="application" aria-label="Map of four locations"></div>
+    <aside class="journey-stats" id="journey-stats" aria-live="polite">
+      <p class="journey-stats-label">Whole journey</p>
+      <dl>
+        <dt>Total time</dt>
+        <dd id="stats-time">—</dd>
+        <dt>Total distance</dt>
+        <dd id="stats-distance">—</dd>
+      </dl>
+    </aside>
+    <fieldset class="style-picker">
+      <legend>Map style</legend>
+      <button type="button" id="style-ortho" aria-pressed="true">
+        Orthophoto
+      </button>
+      <button type="button" id="style-original" aria-pressed="false">
+        Original
+      </button>
+      <button type="button" id="style-osm" aria-pressed="false">
+        OSM Standard
+      </button>
+    </fieldset>
+    </div>
+  </div>
+
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    const jurongHill = {
+      name: "Jurong Hill Prawn Fishing & Beer Garden",
+      lat: 1.320441885175474,
+      lng: 103.70872735977174,
+    };
+
+    const grabHqOneNorth = {
+      name: "Grab HQ @ One-North",
+      lat: 1.2917500014,
+      lng: 103.79296,
+    };
+
+    const trip1Stops = [
+      {
+        ...grabHqOneNorth,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...jurongHill,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const ecoTechSunview = {
+      name: "Eco-tech @ Sunview",
+      lat: 1.3157460001,
+      lng: 103.697721,
+    };
+
+    const trip2Stops = [
+      {
+        ...jurongHill,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...ecoTechSunview,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const royalThaiEmbassy = {
+      name: "Royal Thai Embassy",
+      lat: 1.3062512,
+      lng: 103.8301936561221,
+    };
+
+    const trip3Stops = [
+      {
+        ...ecoTechSunview,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...royalThaiEmbassy,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const delfiOrchard = {
+      name: "Delfi Orchard",
+      lat: 1.3071515185260267,
+      lng: 103.82849766161746,
+    };
+
+    const trip4Stops = [
+      {
+        ...royalThaiEmbassy,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...delfiOrchard,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const theFalconNsrrc = {
+      name: "The Falcon @ NSRCC",
+      lat: 1.3166503922351183,
+      lng: 103.9776968220861,
+    };
+
+    const trip5Stops = [
+      {
+        ...delfiOrchard,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...theFalconNsrrc,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const iteSimei = {
+      name: "ITE Simei",
+      lat: 1.3345715,
+      lng: 103.9541172,
+    };
+
+    const trip6Stops = [
+      {
+        ...theFalconNsrrc,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...iteSimei,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const gentingCentre = {
+      name: "Genting Centre",
+      lat: 1.2735052494429624,
+      lng: 103.84224393612402,
+    };
+
+    const trip7Stops = [
+      {
+        ...iteSimei,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...gentingCentre,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const springleafTower = {
+      name: "Springleaf Tower",
+      lat: 1.275318494,
+      lng: 103.8465327,
+    };
+
+    const trip8Stops = [
+      {
+        ...gentingCentre,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...springleafTower,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    const trip9Stops = [
+      {
+        ...springleafTower,
+        role: "start",
+        color: "#22c55e",
+      },
+      {
+        ...grabHqOneNorth,
+        role: "end",
+        color: "#3b82f6",
+      },
+    ];
+
+    function stopKey(stop) {
+      return `${stop.lat.toFixed(8)},${stop.lng.toFixed(8)}`;
+    }
+
+    function createTripPinIcon(color, highlighted = false) {
+      const size = highlighted ? 18 : 16;
+      const pinClass = highlighted ? "trip-pin trip-pin--highlight" : "trip-pin";
+      return L.divIcon({
+        className: "",
+        html: `<span class="${pinClass}" style="--trip-pin-color:${color}"></span>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size],
+        popupAnchor: [0, -size + 2],
+      });
+    }
+
+    const locations = [
+      {
+        name: "Claymore Road",
+        lat: 1.30782,
+        lng: 103.82987,
+      },
+      {
+        name: "Xilin Avenue and the unnamed road beside it",
+        lat: 1.32944,
+        lng: 103.96335,
+      },
+      {
+        name: "Jalan Ahmad Ibrahim",
+        lat: 1.32137,
+        lng: 103.70813,
+      },
+      {
+        name: "Anson Road",
+        lat: 1.27369,
+        lng: 103.84474,
+      },
+    ];
+
+    const MAP_MAX_ZOOM = 22;
+    const TILE_NATIVE_MAX_ZOOM = 19;
+
+    const map = L.map("map", {
+      maxBounds: [
+        [1.1, 103.5],
+        [1.5, 104.1],
+      ],
+      maxBoundsViscosity: 1,
+      maxZoom: MAP_MAX_ZOOM,
+    });
+
+    let tripRouteLayer = null;
+    let activeTripCard = null;
+
+    const onemapAttributionPrefix =
+      '<a href="https://www.onemap.gov.sg/" target="_blank" rel="noopener noreferrer">' +
+      '<img src="https://www.onemap.gov.sg/maps/images/oneMap64-01.png" alt="OneMap" ' +
+      'style="height:20px;width:20px;vertical-align:middle;" />' +
+      "</a>";
+
+    map.attributionControl.setPrefix(onemapAttributionPrefix);
+
+    const onemapAttribution =
+      'Map data &copy; <a href="https://www.onemap.gov.sg/">OneMap</a> | ' +
+      '<a href="https://www.sla.gov.sg/">Singapore Land Authority</a>';
+
+    const baseLayerOptions = {
+      minZoom: 11,
+      maxZoom: MAP_MAX_ZOOM,
+      maxNativeZoom: TILE_NATIVE_MAX_ZOOM,
+      attribution: onemapAttribution,
+    };
+
+    const orthoLayer = L.tileLayer(
+      "https://www.onemap.gov.sg/maps/tiles/Satellite/{z}/{x}/{y}.png",
+      baseLayerOptions
+    );
+    const originalLayer = L.tileLayer(
+      "https://www.onemap.gov.sg/maps/tiles/Original/{z}/{x}/{y}.png",
+      baseLayerOptions
+    );
+    const osmLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: 11,
+      maxZoom: MAP_MAX_ZOOM,
+      maxNativeZoom: TILE_NATIVE_MAX_ZOOM,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    });
+
+    const baseLayers = {
+      ortho: orthoLayer,
+      original: originalLayer,
+      osm: osmLayer,
+    };
+
+    let activeBaseLayer = orthoLayer;
+    orthoLayer.addTo(map);
+
+    const styleOrthoBtn = document.getElementById("style-ortho");
+    const styleOriginalBtn = document.getElementById("style-original");
+    const styleOsmBtn = document.getElementById("style-osm");
+
+    function setMapStyle(style) {
+      const nextLayer = baseLayers[style] || orthoLayer;
+      if (nextLayer === activeBaseLayer) return;
+
+      map.removeLayer(activeBaseLayer);
+      nextLayer.addTo(map);
+      activeBaseLayer = nextLayer;
+
+      styleOrthoBtn.setAttribute("aria-pressed", String(style === "ortho"));
+      styleOriginalBtn.setAttribute("aria-pressed", String(style === "original"));
+      styleOsmBtn.setAttribute("aria-pressed", String(style === "osm"));
+
+      if (style === "osm") {
+        map.attributionControl.setPrefix(
+          '<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">OSM</a>'
+        );
+      } else {
+        map.attributionControl.setPrefix(onemapAttributionPrefix);
+      }
+    }
+
+    styleOrthoBtn.addEventListener("click", () => setMapStyle("ortho"));
+    styleOriginalBtn.addEventListener("click", () => setMapStyle("original"));
+    styleOsmBtn.addEventListener("click", () => setMapStyle("osm"));
+
+    const bounds = L.latLngBounds();
+
+    locations.forEach((loc) => {
+      const marker = L.marker([loc.lat, loc.lng]).addTo(map);
+      marker.bindPopup(
+        `<strong>${loc.name}</strong><code>${loc.lat}, ${loc.lng}</code>`
+      );
+      bounds.extend([loc.lat, loc.lng]);
+    });
+
+    const trips = [
+      { id: 1, cardId: "trip-1", stops: trip1Stops, durationMinutes: 20 },
+      { id: 2, cardId: "trip-2", stops: trip2Stops, durationMinutes: 6 },
+      { id: 3, cardId: "trip-3", stops: trip3Stops, durationMinutes: 40 },
+      { id: 4, cardId: "trip-4", stops: trip4Stops, durationMinutes: 2 },
+      { id: 5, cardId: "trip-5", stops: trip5Stops, durationMinutes: 23 },
+      { id: 6, cardId: "trip-6", stops: trip6Stops, durationMinutes: 9 },
+      { id: 7, cardId: "trip-7", stops: trip7Stops, durationMinutes: 19 },
+      { id: 8, cardId: "trip-8", stops: trip8Stops, durationMinutes: 5 },
+      { id: 9, cardId: "trip-9", stops: trip9Stops, durationMinutes: 12 },
+    ];
+
+    const journeyStatsEl = document.getElementById("journey-stats");
+    const statsTimeEl = document.getElementById("stats-time");
+    const statsDistanceEl = document.getElementById("stats-distance");
+
+    function formatJourneyDuration(totalMinutes) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours === 0) return `${minutes} min`;
+      if (minutes === 0) return `${hours} hr`;
+      return `${hours} hr ${minutes} min`;
+    }
+
+    function formatJourneyDistance(meters) {
+      if (meters >= 1000) {
+        return `${(meters / 1000).toFixed(1)} km`;
+      }
+      return `${Math.round(meters)} m`;
+    }
+
+    async function fetchDrivingRoute(stops) {
+      const start = stops[0];
+      const end = stops[stops.length - 1];
+      const straightDistance = () =>
+        L.latLng(start.lat, start.lng).distanceTo(L.latLng(end.lat, end.lng));
+
+      try {
+        const url =
+          "https://router.project-osrm.org/route/v1/driving/" +
+          `${start.lng},${start.lat};${end.lng},${end.lat}` +
+          "?overview=full&geometries=geojson";
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.code !== "Ok" || !data.routes?.[0]?.geometry?.coordinates) {
+          throw new Error("Routing unavailable");
+        }
+        const route = data.routes[0];
+        return {
+          latLngs: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+          distanceM: route.distance,
+        };
+      } catch {
+        return {
+          latLngs: [[start.lat, start.lng], [end.lat, end.lng]],
+          distanceM: straightDistance(),
+        };
+      }
+    }
+
+    let journeyStatsRequestId = 0;
+
+    async function updateJourneyStats() {
+      const requestId = ++journeyStatsRequestId;
+      journeyStatsEl.classList.add("is-loading");
+      statsTimeEl.textContent = "…";
+      statsDistanceEl.textContent = "…";
+
+      const totalMinutes = trips.reduce(
+        (sum, trip) => sum + trip.durationMinutes,
+        0
+      );
+
+      try {
+        const routes = await Promise.all(
+          trips.map((trip) => fetchDrivingRoute(trip.stops))
+        );
+        if (requestId !== journeyStatsRequestId) return;
+
+        const totalDistanceM = routes.reduce(
+          (sum, route) => sum + route.distanceM,
+          0
+        );
+
+        statsTimeEl.textContent = formatJourneyDuration(totalMinutes);
+        statsDistanceEl.textContent = formatJourneyDistance(totalDistanceM);
+      } catch {
+        if (requestId !== journeyStatsRequestId) return;
+        statsTimeEl.textContent = formatJourneyDuration(totalMinutes);
+        statsDistanceEl.textContent = "—";
+      } finally {
+        if (requestId === journeyStatsRequestId) {
+          journeyStatsEl.classList.remove("is-loading");
+        }
+      }
+    }
+
+    const tripPinRegistry = new Map();
+
+    trips.forEach((trip) => {
+      trip.stops.forEach((stop, index) => {
+        const key = stopKey(stop);
+        const role = index === 0 ? "start" : "end";
+        if (!tripPinRegistry.has(key)) {
+          tripPinRegistry.set(key, { stop, memberships: [], marker: null });
+        }
+        tripPinRegistry.get(key).memberships.push({ trip, role, stopRef: stop });
+      });
+    });
+
+    function tripPinPopupHtml(stop) {
+      return `<strong>${stop.name}</strong><code>${stop.lat}, ${stop.lng}</code>`;
+    }
+
+    function syncStopPosition(entry, lat, lng) {
+      entry.stop.lat = lat;
+      entry.stop.lng = lng;
+      entry.memberships.forEach(({ stopRef }) => {
+        stopRef.lat = lat;
+        stopRef.lng = lng;
+      });
+    }
+
+    function getActiveTrip() {
+      if (!activeTripCard) return null;
+      return trips.find(
+        (trip) => document.getElementById(trip.cardId) === activeTripCard
+      );
+    }
+
+    function setMarkerDraggable(marker, enabled) {
+      if (!marker?.dragging) return;
+      if (enabled) marker.dragging.enable();
+      else marker.dragging.disable();
+    }
+
+    function updatePinDraggability() {
+      const activeTrip = getActiveTrip();
+      tripPinRegistry.forEach((entry) => {
+        if (!entry.marker) return;
+        const canDrag =
+          activeTrip &&
+          entry.memberships.some((m) => m.trip === activeTrip);
+        setMarkerDraggable(entry.marker, canDrag);
+      });
+    }
+
+    tripPinRegistry.forEach((entry) => {
+      const { stop } = entry;
+      const marker = L.marker([stop.lat, stop.lng], {
+        icon: createTripPinIcon(stop.color),
+        zIndexOffset: 500,
+        draggable: true,
+      }).addTo(map);
+      setMarkerDraggable(marker, false);
+      entry.marker = marker;
+      marker.bindPopup(tripPinPopupHtml(stop));
+      marker.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        handleTripPinClick(entry);
+      });
+      marker.on("dragend", () => {
+        const { lat, lng } = marker.getLatLng();
+        syncStopPosition(entry, lat, lng);
+        marker.setPopupContent(tripPinPopupHtml(entry.stop));
+        const activeTrip = getActiveTrip();
+        if (
+          activeTrip &&
+          entry.memberships.some((m) => m.trip === activeTrip)
+        ) {
+          showTripRoute(activeTrip.stops, activeTripCard, {
+            fitMap: false,
+            silent: true,
+          });
+        }
+        updateJourneyStats();
+      });
+      bounds.extend([stop.lat, stop.lng]);
+    });
+
+    map.fitBounds(bounds, { padding: [48, 48] });
+    requestAnimationFrame(() => map.invalidateSize());
+
+    function highlightTripPinsForCard(card) {
+      tripPinRegistry.forEach((entry) => {
+        const highlighted = entry.memberships.some(
+          (m) => document.getElementById(m.trip.cardId) === card
+        );
+        entry.marker.setIcon(createTripPinIcon(entry.stop.color, highlighted));
+        entry.marker.setZIndexOffset(highlighted ? 800 : 500);
+      });
+    }
+
+    async function showTripRoute(stops, card, { fitMap = true, silent = false } = {}) {
+      if (!silent) card.classList.add("is-loading");
+
+      if (activeTripCard && activeTripCard !== card) {
+        activeTripCard.classList.remove("is-active");
+      }
+
+      if (tripRouteLayer) {
+        map.removeLayer(tripRouteLayer);
+        tripRouteLayer = null;
+      }
+
+      const { latLngs } = await fetchDrivingRoute(stops);
+
+      tripRouteLayer = L.layerGroup().addTo(map);
+      L.polyline(latLngs, {
+        color: "#ffffff",
+        weight: 8,
+        opacity: 0.9,
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(tripRouteLayer);
+      L.polyline(latLngs, {
+        color: "#2563eb",
+        weight: 4,
+        opacity: 0.95,
+        lineJoin: "round",
+        lineCap: "round",
+      }).addTo(tripRouteLayer);
+
+      if (fitMap) {
+        map.fitBounds(L.latLngBounds(latLngs), { padding: [56, 56] });
+      }
+
+      if (!silent) card.classList.remove("is-loading");
+      card.classList.add("is-active");
+      activeTripCard = card;
+      highlightTripPinsForCard(card);
+      updatePinDraggability();
+    }
+
+    function openTripChooserPopup(entry, memberships) {
+      const buttons = memberships
+        .map(
+          (m) =>
+            `<button type="button" data-trip-card="${m.trip.cardId}">Trip ${m.trip.id}</button>`
+        )
+        .join("");
+      const popup = L.popup().setLatLng([entry.stop.lat, entry.stop.lng]).setContent(
+        `<strong>${entry.stop.name}</strong>` +
+          `<p style="margin:0.35rem 0 0;font-size:0.75rem;color:#64748b">Choose a trip:</p>` +
+          `<div class="trip-chooser">${buttons}</div>`
+      );
+
+      popup.on("add", () => {
+        const container = popup.getElement();
+        if (!container) return;
+        container.querySelectorAll("[data-trip-card]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const trip = trips.find((t) => t.cardId === btn.dataset.tripCard);
+            if (trip) {
+              map.closePopup();
+              showTripRoute(trip.stops, document.getElementById(trip.cardId));
+            }
+          });
+        });
+      });
+
+      popup.openOn(map);
+    }
+
+    function handleTripPinClick(entry) {
+      if (!entry) return;
+
+      let tripToShow = null;
+
+      if (activeTripCard) {
+        tripToShow = entry.memberships.find(
+          (m) => document.getElementById(m.trip.cardId) === activeTripCard
+        )?.trip;
+      }
+
+      if (!tripToShow && entry.memberships.length === 1) {
+        tripToShow = entry.memberships[0].trip;
+      }
+
+      if (!tripToShow && entry.memberships.length > 1) {
+        openTripChooserPopup(entry, entry.memberships);
+        return;
+      }
+
+      if (tripToShow) {
+        showTripRoute(
+          tripToShow.stops,
+          document.getElementById(tripToShow.cardId),
+          { fitMap: true }
+        );
+      }
+    }
+
+    function bindTripCard(trip) {
+      const card = document.getElementById(trip.cardId);
+      const selectTrip = () => {
+        document.querySelectorAll(".trip-card.is-active").forEach((el) => {
+          el.classList.remove("is-active");
+        });
+        showTripRoute(trip.stops, card);
+      };
+      card.addEventListener("click", selectTrip);
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          selectTrip();
+        }
+      });
+    }
+
+    trips.forEach(bindTripCard);
+
+    updateJourneyStats();
+
+    window.addEventListener("resize", () => map.invalidateSize());
+
+    map.on("click", (e) => {
+      const lat = e.latlng.lat.toFixed(5);
+      const lng = e.latlng.lng.toFixed(5);
+      L.popup()
+        .setLatLng(e.latlng)
+        .setContent(`<code>${lat}, ${lng}</code>`)
+        .openOn(map);
+    });
+  </script>
+</body>
+</html>
