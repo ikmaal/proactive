@@ -55,8 +55,47 @@
       border-bottom: 1px solid rgba(148, 163, 184, 0.2);
     }
     .app-header-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
       max-width: 72rem;
       margin: 0 auto;
+    }
+    .app-header-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .app-refresh {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      margin-top: 0.05rem;
+      padding: 0.4rem 0.65rem;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
+      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .app-refresh:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(148, 163, 184, 0.55);
+    }
+    .app-refresh:focus-visible {
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
+    }
+    .app-refresh-icon {
+      font-size: 0.9rem;
+      line-height: 1;
     }
     .app-header h1 {
       margin: 0;
@@ -273,22 +312,27 @@
       right: 12px;
       left: auto;
       z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
+      width: 11.75rem;
       margin: 0;
-      padding: 0.55rem 0.6rem;
-      border: none;
+      padding: 0.5rem 0.55rem 0.55rem;
       min-inline-size: 0;
     }
     .style-picker legend {
+      display: block;
+      width: 100%;
       font-size: 0.65rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--color-muted);
       padding: 0;
-      margin: 0 0 0.2rem;
+      margin: 0 0 0.4rem;
+    }
+    .style-picker__grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.3rem;
+      width: 100%;
     }
     .style-picker button {
       appearance: none;
@@ -297,11 +341,12 @@
       background: var(--color-surface);
       color: var(--color-text);
       font: inherit;
-      font-size: 0.75rem;
-      padding: 0.4rem 0.55rem;
+      font-size: 0.6875rem;
+      padding: 0.45rem 0.2rem;
       cursor: pointer;
       text-align: center;
-      min-width: 6.75rem;
+      min-width: 0;
+      width: 100%;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
     }
     .style-picker button:hover {
@@ -447,24 +492,14 @@
         font-size: 0.75rem;
       }
       .style-picker {
-        left: auto;
         right: 8px;
         bottom: 8px;
-        flex-flow: row wrap;
-        justify-content: flex-end;
-        max-width: min(calc(100% - 16px), 240px);
-        padding: 0.45rem;
-        gap: 0.3rem;
-      }
-      .style-picker legend {
-        width: 100%;
-        margin-bottom: 0;
+        width: min(11.75rem, calc(100% - 16px));
+        padding: 0.45rem 0.5rem 0.5rem;
       }
       .style-picker button {
-        min-width: 0;
-        flex: 1 1 30%;
-        padding: 0.45rem 0.35rem;
         font-size: 0.625rem;
+        padding: 0.42rem 0.15rem;
       }
       .leaflet-popup-content {
         font-size: 0.9rem;
@@ -479,10 +514,16 @@
 <body>
   <header class="app-header">
     <div class="app-header-inner">
-      <h1>Proactive Road Test Plan</h1>
-      <p class="app-tagline">
-        9 legs across Singapore · select a trip to show its route
-      </p>
+      <div class="app-header-text">
+        <h1>Proactive Road Test Plan</h1>
+        <p class="app-tagline">
+          9 legs across Singapore · select a trip to show its route
+        </p>
+      </div>
+      <button type="button" class="app-refresh" id="app-refresh" title="Reload latest version">
+        <span class="app-refresh-icon" aria-hidden="true">↻</span>
+        Refresh
+      </button>
     </div>
   </header>
   <div class="map-shell">
@@ -707,15 +748,17 @@
     </aside>
     <fieldset class="style-picker map-panel">
       <legend>Basemap</legend>
-      <button type="button" id="style-ortho" aria-pressed="true">
-        Satellite
-      </button>
-      <button type="button" id="style-original" aria-pressed="false">
-        Street
-      </button>
-      <button type="button" id="style-osm" aria-pressed="false">
-        OSM
-      </button>
+      <div class="style-picker__grid">
+        <button type="button" id="style-ortho" aria-pressed="true">
+          Satellite
+        </button>
+        <button type="button" id="style-original" aria-pressed="false">
+          Street
+        </button>
+        <button type="button" id="style-osm" aria-pressed="false">
+          OSM
+        </button>
+      </div>
     </fieldset>
     </div>
   </div>
@@ -1358,6 +1401,12 @@
     trips.forEach(bindTripCard);
 
     updateJourneyStats();
+
+    document.getElementById("app-refresh").addEventListener("click", () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("v", String(Date.now()));
+      window.location.replace(url.toString());
+    });
 
     function refreshMapLayout() {
       map.invalidateSize();
