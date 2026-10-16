@@ -8,7 +8,7 @@
   />
   <meta name="theme-color" content="#0f172a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>Singapore Locations Map</title>
+  <title>Proactive Road Test Plan</title>
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
@@ -19,7 +19,19 @@
       box-sizing: border-box;
     }
     :root {
-      --header-h: 72px;
+      --header-h: 68px;
+      --color-bg: #f8fafc;
+      --color-surface: #ffffff;
+      --color-border: #e2e8f0;
+      --color-text: #0f172a;
+      --color-muted: #64748b;
+      --color-subtle: #94a3b8;
+      --color-accent: #2563eb;
+      --color-accent-soft: #eff6ff;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --shadow-panel: 0 4px 24px rgba(15, 23, 42, 0.12);
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
     html {
       height: 100%;
@@ -27,27 +39,36 @@
     body {
       margin: 0;
       min-height: 100%;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      color: #1a1a1a;
+      font-family: var(--font);
+      color: var(--color-text);
+      background: var(--color-bg);
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior: none;
     }
-    header {
-      padding: 1rem 1.25rem;
-      padding-top: max(1rem, env(safe-area-inset-top));
-      padding-left: max(1.25rem, env(safe-area-inset-left));
-      padding-right: max(1.25rem, env(safe-area-inset-right));
+    .app-header {
+      padding: 0.75rem 1rem;
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
       background: #0f172a;
       color: #f8fafc;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
     }
-    header h1 {
-      margin: 0 0 0.25rem;
-      font-size: 1.25rem;
-      font-weight: 600;
+    .app-header-inner {
+      max-width: 72rem;
+      margin: 0 auto;
     }
-    header p {
+    .app-header h1 {
       margin: 0;
-      font-size: 0.875rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+    .app-tagline {
+      margin: 0.2rem 0 0;
+      font-size: 0.8125rem;
+      line-height: 1.35;
       color: #94a3b8;
     }
     .map-shell {
@@ -56,46 +77,66 @@
       min-height: 0;
     }
     .trip-planner {
-      flex: 0 0 220px;
-      padding: 0.65rem 0.7rem;
-      overflow-y: auto;
-      background: #f1f5f9;
-      border-right: 1px solid #e2e8f0;
+      flex: 0 0 252px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      background: var(--color-bg);
+      border-right: 1px solid var(--color-border);
     }
-    .trip-planner-label {
-      margin: 0 0 0.5rem 0.15rem;
-      font-size: 0.65rem;
+    .trip-planner-head {
+      flex-shrink: 0;
+      padding: 0.75rem 0.85rem 0.65rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+    }
+    .trip-planner-title {
+      margin: 0;
+      font-size: 0.7rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #94a3b8;
+      color: var(--color-muted);
     }
     .trip-planner-hint {
-      margin: 0 0 0.5rem 0.15rem;
-      font-size: 0.65rem;
-      line-height: 1.35;
-      color: #94a3b8;
+      margin: 0.35rem 0 0;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--color-subtle);
     }
     .trip-planner-scroll {
-      display: block;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 0.65rem 0.75rem 0.75rem;
     }
     .trip-card {
-      padding: 0.55rem 0.6rem;
-      border-radius: 12px;
-      background: #fff;
-      border: 1px solid #e2e8f0;
+      padding: 0.65rem 0.7rem;
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       cursor: pointer;
-      transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s,
+        opacity 0.15s;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
     .trip-card:hover {
       border-color: #cbd5e1;
     }
+    .trip-card:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
     .trip-card.is-active {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px #dbeafe;
+      border-color: var(--color-accent);
+      background: var(--color-accent-soft);
+      box-shadow: 0 0 0 1px var(--color-accent);
     }
     .trip-card.is-loading {
       opacity: 0.65;
@@ -108,23 +149,26 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.35rem;
-      margin-bottom: 0.45rem;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
     }
     .trip-id {
-      font-size: 0.72rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      color: #0f172a;
+      color: var(--color-text);
     }
     .trip-duration {
-      font-size: 0.65rem;
+      font-size: 0.6875rem;
       font-weight: 600;
-      color: #0369a1;
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      padding: 0.12rem 0.4rem;
+      color: #1d4ed8;
+      background: #fff;
+      border: 1px solid #bfdbfe;
+      padding: 0.15rem 0.45rem;
       border-radius: 999px;
       white-space: nowrap;
+    }
+    .trip-card.is-active .trip-duration {
+      background: #fff;
     }
     .trip-route {
       display: flex;
@@ -134,8 +178,8 @@
     }
     .trip-leg {
       display: grid;
-      grid-template-columns: 10px 1fr;
-      gap: 0.4rem;
+      grid-template-columns: 12px 1fr;
+      gap: 0.5rem;
       align-items: start;
       min-width: 0;
     }
@@ -164,9 +208,16 @@
       box-shadow: 0 0 0 2px #dbeafe;
     }
     .trip-place {
-      font-size: 0.7rem;
-      line-height: 1.35;
+      font-size: 0.75rem;
+      line-height: 1.4;
       color: #334155;
+    }
+    .map-panel {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: var(--shadow-panel);
+      backdrop-filter: blur(8px);
     }
     .map-area {
       position: relative;
@@ -183,78 +234,74 @@
       top: 12px;
       right: 12px;
       z-index: 1000;
-      min-width: 9.5rem;
-      padding: 0.55rem 0.65rem;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.96);
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
-      border: 1px solid #e2e8f0;
+      min-width: 10.5rem;
+      padding: 0.6rem 0.75rem;
     }
     .journey-stats-label {
-      margin: 0 0 0.4rem;
+      margin: 0 0 0.45rem;
       font-size: 0.65rem;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #64748b;
+      color: var(--color-muted);
     }
     .journey-stats dl {
       margin: 0;
       display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.2rem 0.65rem;
+      grid-template-columns: 1fr auto;
+      gap: 0.35rem 1rem;
       align-items: baseline;
     }
     .journey-stats dt {
-      font-size: 0.68rem;
-      color: #94a3b8;
+      font-size: 0.75rem;
+      color: var(--color-subtle);
     }
     .journey-stats dd {
       margin: 0;
-      font-size: 0.8rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      color: #0f172a;
+      color: var(--color-text);
       text-align: right;
+      font-variant-numeric: tabular-nums;
     }
     .journey-stats.is-loading dd {
       color: #94a3b8;
     }
     .style-picker {
       position: absolute;
-      top: 50%;
+      bottom: 12px;
       right: 12px;
+      left: auto;
       z-index: 1000;
-      transform: translateY(-50%);
       display: flex;
       flex-direction: column;
       gap: 0.35rem;
-      padding: 0.5rem;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.96);
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
-      border: 1px solid #e2e8f0;
+      margin: 0;
+      padding: 0.55rem 0.6rem;
+      border: none;
+      min-inline-size: 0;
     }
     .style-picker legend {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 600;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #64748b;
-      padding: 0 0.15rem;
-      margin-bottom: 0.15rem;
+      color: var(--color-muted);
+      padding: 0;
+      margin: 0 0 0.2rem;
     }
     .style-picker button {
       appearance: none;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      background: #fff;
-      color: #0f172a;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text);
       font: inherit;
-      font-size: 0.8125rem;
-      padding: 0.45rem 0.65rem;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.55rem;
       cursor: pointer;
-      text-align: left;
-      min-width: 7.5rem;
+      text-align: center;
+      min-width: 6.75rem;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
     }
     .style-picker button:hover {
@@ -328,16 +375,16 @@
     }
     @media (max-width: 768px) {
       :root {
-        --header-h: 52px;
+        --header-h: 56px;
       }
-      header {
+      .app-header {
         padding-top: max(0.55rem, env(safe-area-inset-top));
         padding-bottom: 0.55rem;
       }
-      header h1 {
-        font-size: 1rem;
+      .app-header h1 {
+        font-size: 0.9375rem;
       }
-      header p {
+      .app-tagline {
         display: none;
       }
       .map-shell {
@@ -351,12 +398,13 @@
       .trip-planner {
         order: 2;
         flex: 0 0 auto;
-        max-height: min(42dvh, 320px);
+        max-height: min(40dvh, 300px);
         border-right: none;
-        border-top: 1px solid #e2e8f0;
-        padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
-        padding-left: max(0.7rem, env(safe-area-inset-left));
-        padding-right: max(0.7rem, env(safe-area-inset-right));
+        border-top: 1px solid var(--color-border);
+      }
+      .trip-planner-head {
+        padding-left: max(0.85rem, env(safe-area-inset-left));
+        padding-right: max(0.85rem, env(safe-area-inset-right));
       }
       .trip-planner-hint {
         display: none;
@@ -366,7 +414,9 @@
         gap: 0.5rem;
         overflow-x: auto;
         overflow-y: hidden;
-        padding-bottom: 0.25rem;
+        padding: 0.65rem max(0.75rem, env(safe-area-inset-right))
+          max(0.75rem, env(safe-area-inset-bottom))
+          max(0.75rem, env(safe-area-inset-left));
         scroll-snap-type: x proximity;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
@@ -397,26 +447,24 @@
         font-size: 0.75rem;
       }
       .style-picker {
-        top: auto;
-        bottom: 8px;
+        left: auto;
         right: 8px;
-        transform: none;
+        bottom: 8px;
         flex-flow: row wrap;
         justify-content: flex-end;
-        max-width: min(100% - 16px, 220px);
-        padding: 0.4rem;
-        gap: 0.25rem;
+        max-width: min(calc(100% - 16px), 240px);
+        padding: 0.45rem;
+        gap: 0.3rem;
       }
       .style-picker legend {
         width: 100%;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0;
       }
       .style-picker button {
         min-width: 0;
-        flex: 1 1 auto;
-        padding: 0.5rem 0.4rem;
-        font-size: 0.65rem;
-        text-align: center;
+        flex: 1 1 30%;
+        padding: 0.45rem 0.35rem;
+        font-size: 0.625rem;
       }
       .leaflet-popup-content {
         font-size: 0.9rem;
@@ -429,14 +477,22 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>Location pins</h1>
-    <p>Four sites in Singapore — click a pin for details</p>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <h1>Proactive Road Test Plan</h1>
+      <p class="app-tagline">
+        9 legs across Singapore · select a trip to show its route
+      </p>
+    </div>
   </header>
   <div class="map-shell">
     <aside class="trip-planner" aria-label="Trip planner">
-      <p class="trip-planner-label">Trips</p>
-      <p class="trip-planner-hint">Select a trip, then drag its pins to update the route.</p>
+      <div class="trip-planner-head">
+        <h2 class="trip-planner-title">Trip legs</h2>
+        <p class="trip-planner-hint">
+          Tap a leg to preview the route. Drag pins on the map to adjust.
+        </p>
+      </div>
       <div class="trip-planner-scroll">
       <article
         class="trip-card"
@@ -639,9 +695,9 @@
       </div>
     </aside>
     <div class="map-area">
-    <div id="map" role="application" aria-label="Map of four locations"></div>
-    <aside class="journey-stats" id="journey-stats" aria-live="polite">
-      <p class="journey-stats-label">Whole journey</p>
+    <div id="map" role="application" aria-label="Proactive road test plan map"></div>
+    <aside class="journey-stats map-panel" id="journey-stats" aria-live="polite">
+      <p class="journey-stats-label">Journey total</p>
       <dl>
         <dt>Total time</dt>
         <dd id="stats-time">—</dd>
@@ -649,16 +705,16 @@
         <dd id="stats-distance">—</dd>
       </dl>
     </aside>
-    <fieldset class="style-picker">
-      <legend>Map style</legend>
+    <fieldset class="style-picker map-panel">
+      <legend>Basemap</legend>
       <button type="button" id="style-ortho" aria-pressed="true">
-        Orthophoto
+        Satellite
       </button>
       <button type="button" id="style-original" aria-pressed="false">
-        Original
+        Street
       </button>
       <button type="button" id="style-osm" aria-pressed="false">
-        OSM Standard
+        OSM
       </button>
     </fieldset>
     </div>
