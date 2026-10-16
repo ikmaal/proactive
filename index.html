@@ -314,19 +314,18 @@
       z-index: 1000;
       width: 11.75rem;
       margin: 0;
-      padding: 0.5rem 0.55rem 0.55rem;
+      padding: 0.6rem 0.65rem 0.65rem;
       min-inline-size: 0;
+      overflow: hidden;
     }
-    .style-picker legend {
-      display: block;
-      width: 100%;
+    .style-picker-title {
+      margin: 0 0 0.45rem;
       font-size: 0.65rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--color-muted);
-      padding: 0;
-      margin: 0 0 0.4rem;
+      line-height: 1.2;
     }
     .style-picker__grid {
       display: grid;
@@ -746,8 +745,8 @@
         <dd id="stats-distance">—</dd>
       </dl>
     </aside>
-    <fieldset class="style-picker map-panel">
-      <legend>Basemap</legend>
+    <div class="style-picker map-panel" role="group" aria-labelledby="basemap-label">
+      <p class="style-picker-title" id="basemap-label">Basemap</p>
       <div class="style-picker__grid">
         <button type="button" id="style-ortho" aria-pressed="true">
           Satellite
@@ -759,7 +758,7 @@
           OSM
         </button>
       </div>
-    </fieldset>
+    </div>
     </div>
   </div>
 
